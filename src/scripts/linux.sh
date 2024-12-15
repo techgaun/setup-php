@@ -246,15 +246,25 @@ setup_php() {
   step_log "Setup PHP"
   sudo mkdir -m 777 -p /var/run /run/php
   php_config="$(command -v php-config)"
-  if [[ -z "$php_config" ]] || [ "$(php_semver | cut -c 1-3)" != "$version" ]; then
+  if [[ -z "$php_config" ]] || [ "$(php_semver | cut -c 1-3)" != "$version" ]]; then
+    echo "Debug: PHP config not found or version mismatch. Attempting to install PHP $version." >&2
     if [ ! -e "/usr/bin/php$version" ] || [ ! -e "/usr/bin/php-config$version" ]; then
+      echo "Debug: PHP binaries not found. Installing PHP $version." >&2
       add_php >/dev/null 2>&1
+      if [ $? -ne 0 ]; then
+        echo "Debug: Failed to install PHP $version." >&2
+      fi
     else
       if ! [[ "$version" =~ ${old_versions:?} ]]; then
+        echo "Debug: Switching to PHP $version." >&2
         switch_version >/dev/null 2>&1
       fi
       if [ "${update:?}" = "true" ]; then
+        echo "Debug: Updating PHP to $version." >&2
         update_php >/dev/null 2>&1
+        if [ $? -ne 0 ]; then
+          echo "Debug: Failed to update PHP to $version." >&2
+        fi
       else
         status="Switched to"
       fi
@@ -262,13 +272,18 @@ setup_php() {
     php_config="$(command -v php-config)"
   else
     if [ "$update" = "true" ]; then
+      echo "Debug: PHP is already installed. Updating PHP to $version." >&2
       update_php >/dev/null 2>&1
+      if [ $? -ne 0 ]; then
+        echo "Debug: Failed to update PHP to $version." >&2
+      fi
     else
       status="Found"
     fi
   fi
   if ! command -v php"$version" >/dev/null; then
     add_log "${cross:?}" "PHP" "Could not setup PHP $version"
+    echo "Debug: Could not find PHP $version after installation attempt." >&2
     exit 1
   fi
   ext_dir="/usr/$(grep -Po "extension_dir=..[^/]*/\K[^'\"]*" "$php_config")"
