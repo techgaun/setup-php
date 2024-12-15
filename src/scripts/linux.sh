@@ -246,7 +246,7 @@ setup_php() {
   step_log "Setup PHP"
   sudo mkdir -m 777 -p /var/run /run/php
   php_config="$(command -v php-config)"
-  if [[ -z "$php_config" ]] || [ "$(php_semver | cut -c 1-3)" != "$version" ]]; then
+  if [[ -z "$php_config" ]] || [ "$(php_semver | cut -c 1-3)" != "$version" ]; then
     echo "Debug: PHP config not found or version mismatch. Attempting to install PHP $version." >&2
     if [ ! -e "/usr/bin/php$version" ] || [ ! -e "/usr/bin/php-config$version" ]; then
       echo "Debug: PHP binaries not found. Installing PHP $version." >&2
