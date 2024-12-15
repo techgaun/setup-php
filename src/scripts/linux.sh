@@ -31,11 +31,17 @@ fix_broken_packages() {
 # Function to install a package
 install_packages() {
   packages=("$@")
+  echo "Debug: Installing packages: ${packages[*]}." >&2
   if ! [ -e /etc/dpkg/dpkg.cfg.d/force-confnew ]; then
     echo "force-confnew" | sudo tee /etc/dpkg/dpkg.cfg.d/force-confnew >/dev/null 2>&1
     trap "sudo rm -f /etc/dpkg/dpkg.cfg.d/force-confnew 2>/dev/null" exit
   fi
   $apt_install "${packages[@]}" >/dev/null 2>&1 || (update_lists && fix_broken_packages && $apt_install "${packages[@]}" >/dev/null 2>&1)
+  if [ $? -ne 0 ]; then
+    echo "Debug: Failed to install packages: ${packages[*]}." >&2
+  else
+    echo "Debug: Successfully installed packages: ${packages[*]}." >&2
+  fi
 }
 
 # Function to disable an extension.
@@ -113,16 +119,19 @@ add_devtools() {
 
 # Function to setup the nightly build from shivammathur/php-builder
 setup_nightly() {
+  echo "Debug: Running setup_nightly for PHP $version." >&2
   run_script "php-builder" "${runner:?}" "$version" "${debug:?}" "${ts:?}"
 }
 
 # Function to setup PHP 5.3, PHP 5.4 and PHP 5.5.
 setup_old_versions() {
+  echo "Debug: Running setup_old_versions for PHP $version." >&2
   run_script "php5-ubuntu" "$version"
 }
 
 # Function to setup PHP from the cached builds.
 setup_cached_versions() {
+  echo "Debug: Running setup_cached_versions for PHP $version." >&2
   run_script "php-ubuntu" "$version" "${debug:?}" "${ts:?}"
 }
 
@@ -166,8 +175,10 @@ get_php_packages() {
 
 # Function to install packaged PHP
 add_packaged_php() {
+  echo "Debug: Adding PPA for PHP $version." >&2
   add_ppa ondrej/php >/dev/null 2>&1 || update_ppa ondrej/php
   IFS=' ' read -r -a packages <<<"$(get_php_packages)"
+  echo "Debug: Installing PHP packages: ${packages[*]}." >&2
   install_packages "${packages[@]}"
 }
 
@@ -185,20 +196,29 @@ update_php() {
 
 # Function to install PHP.
 add_php() {
+  echo "Debug: Starting add_php function for PHP $version." >&2
   if [ "${runner:?}" = "self-hosted" ] || [ "${use_package_cache:-true}" = "false" ]; then
+    echo "Debug: Using self-hosted runner or package cache is disabled." >&2
     if [[ "$version" =~ ${nightly_versions:?} ]]; then
-        setup_nightly
+      echo "Debug: Setting up nightly build for PHP $version." >&2
+      setup_nightly
     else
+      echo "Debug: Adding packaged PHP $version." >&2
       add_packaged_php
+      echo "Debug: Switching PHP version to $version." >&2
       switch_version >/dev/null 2>&1
+      echo "Debug: Adding PECL for PHP $version." >&2
       add_pecl
     fi
   elif [[ "$version" =~ ${old_versions:?} ]]; then
+    echo "Debug: Setting up old PHP version $version." >&2
     setup_old_versions
   else
+    echo "Debug: Setting up cached PHP version $version." >&2
     setup_cached_versions
   fi
   status="Installed"
+  echo "Debug: Completed add_php function for PHP $version." >&2
 }
 
 # Function to ini file for pear and link it to each SAPI.
