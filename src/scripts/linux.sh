@@ -270,7 +270,7 @@ setup_php() {
     echo "Debug: PHP config not found or version mismatch. Attempting to install PHP $version." >&2
     if [ ! -e "/usr/bin/php$version" ] || [ ! -e "/usr/bin/php-config$version" ]; then
       echo "Debug: PHP binaries not found. Installing PHP $version." >&2
-      add_php >/dev/null 2>&1
+      add_php
       if [ $? -ne 0 ]; then
         echo "Debug: Failed to install PHP $version." >&2
       fi
